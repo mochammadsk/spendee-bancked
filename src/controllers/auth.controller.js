@@ -3,6 +3,13 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+const userData = (u) => ({
+  id: u._id.toString(),
+  name: u.name,
+  user_name: u.user_name,
+  role: u.role,
+});
+
 exports.signin = async (req, res) => {
   try {
     const { user_name, password } = req.body;
@@ -30,13 +37,6 @@ exports.signin = async (req, res) => {
       expiresIn: process.env.TOKEN_TTL,
     });
 
-    const userData = (u) => ({
-      id: u._id.toString(),
-      name: u.name,
-      user_name: u.user_name,
-      role: u.role,
-    });
-
     return res.status(200).json({ token, data: userData(user) });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -45,16 +45,18 @@ exports.signin = async (req, res) => {
 
 exports.keepSignedIn = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    if (!req.user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id)
+      .select('name user_name role')
+      .lean();
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const userData = (u) => ({
-      id: u._id.toString(),
-      name: u.name,
-      user_name: u.user_name,
-      role: u.role,
-    });
+
     return res.status(200).json({ data: userData(user) });
   } catch (error) {
     return res.status(500).json({ message: error.message });
