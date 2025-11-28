@@ -7,14 +7,10 @@ require('dotenv').config();
   await User.deleteMany({});
   const user = [
     {
-      user_name: process.env.USER_NAME_1,
-      name: process.env.NAME_1,
-      password: process.env.PASSWORD_1,
-    },
-    {
-      user_name: process.env.USER_NAME_2,
-      name: process.env.NAME_2,
-      password: process.env.PASSWORD_2,
+      email: 'user@email.com',
+      full_name: 'Mochammad Syahrul Kurniawan',
+      user_name: 'mochammadsk',
+      password: '123123',
     },
   ];
 
