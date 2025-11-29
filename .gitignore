@@ -142,4 +142,4 @@ vite.config.ts.timestamp-*
 .vercel
 
 # Seeder
-seeds/*.js
+src/seeds/
