@@ -70,7 +70,7 @@ app.use((req, _res, next) => {
 });
 
 // Routes
-app.get('/', (_req, res) => res.send('Your server is running ^_^'));
+app.get('/', (_req, res) => res.send('Spendee is running ^_^'));
 app.use('/api', routes);
 
 app.use((err, _req, res, _next) => {
