@@ -10,5 +10,6 @@ router.post('/verify-otp', limiter, auth.verifyOtp);
 router.post('/resend-otp', limiter, auth.resendOtp);
 router.post('/signin', limiter, auth.signin);
 router.get('/keep-signed-in', authenticate, auth.keepSignedIn);
+router.post('/signout', authenticate, auth.signout);
 
 module.exports = router;
