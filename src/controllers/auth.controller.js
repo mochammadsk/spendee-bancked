@@ -92,6 +92,72 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user.verified)
+      return res.status(400).json({ message: 'User already verified' });
+
+    const lastRecord = await userOtp
+      .findOne({ user_id: user._id })
+      .sort({ created_at: -1 });
+
+    const now = new Date();
+
+    // Cooldown 60s
+    if (lastRecord && lastRecord.createdAt) {
+      const secondsSinceLast = (now - lastRecord.createdAt) / 1000;
+      if (secondsSinceLast < 60) {
+        const wait = Math.ceil(60 - secondsSinceLast);
+        return res.status(429).json({
+          message: `Please wait ${wait} seconds before requesting a new OTP`,
+        });
+      }
+    }
+
+    // Resend limit
+    const prevResendCount =
+      lastRecord && lastRecord.resend_count ? lastRecord.resend_count : 0;
+    if (prevResendCount >= 3) {
+      return res
+        .status(429)
+        .json({ message: 'Maximum OTP resend attempts reached' });
+    }
+
+    // Send new OTP
+    const otp = generateOtp(OTP_LENGTH);
+    const expires_at = new Date(Date.now() + OTP_EXPIRE_MIN * 60 * 1000);
+    const otpHash = await bcrypt.hash(otp, SALT_ROUNDS);
+
+    // Save new OTP record
+    await userOtp.deleteMany({ user_id: user._id });
+    const newRecord = await userOtp.create({
+      user_id: user._id,
+      otp: otpHash,
+      expires_at,
+      created_at: now,
+      resend_count: prevResendCount + 1,
+    });
+    await sendOtp(email, otp);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP resent',
+      info: {
+        resend_count: newRecord.resend_count,
+        expires_at: newRecord.expires_at,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 exports.signin = async (req, res) => {
   try {
     const { user_name, password } = req.body;
