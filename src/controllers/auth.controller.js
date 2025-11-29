@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const generateOtp = require('../utils/generateOtp');
 const sendOtp = require('../utils/sendOtp');
 const userOtp = require('../models/userOtp');
+const escapeRegExp = require('../utils/escapeRegExp');
 require('dotenv').config();
 
 // Helper to format user data
@@ -160,15 +161,26 @@ exports.resendOtp = async (req, res) => {
 
 exports.signin = async (req, res) => {
   try {
-    const { user_name, password } = req.body;
-    if (!user_name || !password) {
+    const { identifier, password } = req.body;
+    if (!identifier || !password) {
       return res.status(400).json({ message: 'Fields are required' });
     }
 
-    const user = await User.findOne({ user_name });
+    const safeIdentifier = escapeRegExp(identifier.trim());
+    const query = {
+      $or: [
+        { email: new RegExp(`^${safeIdentifier}$`, 'i') },
+        { user_name: new RegExp(`^${safeIdentifier}$`, 'i') },
+      ],
+    };
+
+    const user = await User.findOne(query);
     if (!user || !user.password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    if (!user.verified)
+      return res.status(403).json({ message: 'Account not verified' });
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
@@ -178,11 +190,13 @@ exports.signin = async (req, res) => {
     const payload = {
       id: user._id.toString(),
       email: user.email,
-      role: user.role,
+      full_name: user.full_name,
+      user_name: user.user_name,
+      verified: user.verified,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.TOKEN_TTL,
+      expiresIn: process.env.TOKEN_TTL || '7d',
     });
 
     return res.status(200).json({ token, data: userData(user) });
