@@ -12,7 +12,7 @@ async function generateOtp() {
   return { otp, otpHash, expires_at };
 }
 
-function checkOtp(lastRecord, cooldownSeconds = 60) {
+function cooldownOtp(lastRecord, cooldownSeconds = 60) {
   if (!lastRecord || !lastRecord.createdAt) return null;
 
   const now = new Date();
@@ -35,4 +35,4 @@ function limitOtp(lastRecord, max = 3) {
   return { limited: false, count };
 }
 
-module.exports = { generateOtp, checkOtp, limitOtp };
+module.exports = { generateOtp, cooldownOtp, limitOtp };
