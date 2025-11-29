@@ -15,7 +15,7 @@ async function sendOtp(email, otp) {
   const mailOptions = {
     from: `"noreply" <${process.env.SMTP_USER}>`,
     to: email,
-    subject: 'Your verification code',
+    subject: 'Verification Code',
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6">
       <div
