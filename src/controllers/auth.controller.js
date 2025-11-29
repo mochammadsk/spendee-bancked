@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const generateOtp = require('../utils/generateOtp');
 const sendOtp = require('../utils/sendOtp');
 const userOtp = require('../models/userOtp');
-const { success } = require('zod');
 require('dotenv').config();
 
 // Helper to format user data
@@ -46,19 +45,48 @@ exports.signup = async (req, res) => {
     // Generate and send OTP
     const otp = generateOtp(6);
     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    const otpHash = await bcrypt.hash(otp, 10);
 
     await userOtp.deleteMany({ user_id: newUser._id });
     await userOtp.create({
       user_id: newUser._id,
-      otp,
+      otp: otpHash,
       expires_at: otpExpiry,
     });
-
     await sendOtp(email, otp);
 
     return res
       .status(201)
       .json({ success: true, otp_sent: true, data: userData(newUser) });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { user_id, otp } = req.body;
+    if (!user_id || !otp) {
+      return res.status(400).json({ message: 'Fields are required' });
+    }
+
+    const record = await userOtp.findOne({ user_id }).sort({ created_at: -1 });
+    if (!record) return res.status(404).json({ message: 'OTP not found' });
+
+    if (record.expires_at < new Date()) {
+      await userOtp.deleteMany({ user_id });
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    const match = await bcrypt.compare(otp, record.otp);
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid OTP' });
+    }
+
+    await userOtp.deleteMany({ user_id });
+    await User.findByIdAndUpdate(user_id, { verified: true });
+
+    return res.status(200).json({ success: true, message: 'OTP verified' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
