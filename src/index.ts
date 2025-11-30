@@ -1,20 +1,23 @@
-const express = require('express');
-const crypto = require('node:crypto');
-const cors = require('cors');
-const database = require('./src/lib/database');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const routes = require('./src/routes');
-require('dotenv').config();
+import express, { Request, Response, NextFunction } from 'express';
+import crypto from 'node:crypto';
+import cors from 'cors';
+import database from './lib/database';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import routes from './routes';
+import dotenv from 'dotenv';
 
-// Create app
+dotenv.config();
+
 const app = express();
 
 // Config
-let connectDB;
+let connectDB: (() => Promise<any>) | undefined;
 try {
-  ({ connectDB } = database);
-} catch {}
+  ({ connectDB } = database as { connectDB?: () => Promise<any> });
+} catch {
+  connectDB = undefined;
+}
 
 // Security
 app.set('trust proxy', 1);
@@ -56,13 +59,16 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Logger
-app.use((req, res, next) => {
-  req.id = req.headers['x-request-id'] || crypto.randomUUID();
-  res.setHeader('x-request-id', req.id);
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const rid = (req.headers['x-request-id'] as string) || crypto.randomUUID();
+  req.id = rid;
+  res.setHeader('x-request-id', rid);
   next();
 });
+
 app.use(morgan('dev'));
-app.use((req, _res, next) => {
+
+app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log(
     `[${new Date().toISOString()}] ${req.method} ${req.url} id=${req.id}`
   );
@@ -70,13 +76,16 @@ app.use((req, _res, next) => {
 });
 
 // Routes
-app.get('/', (_req, res) => res.send('Spendee is running ^_^'));
+app.get('/', (_req: Request, res: Response) =>
+  res.send('Spendee is running ^_^')
+);
 app.use('/api', routes);
 
-app.use((err, _req, res, _next) => {
+// Error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('ERROR:', err);
-  const status = err.status || 500;
-  res.status(status).json({ message: err.message || 'Internal Server Error' });
+  const status = err?.status || 500;
+  res.status(status).json({ message: err?.message || 'Internal Server Error' });
 });
 
 async function start() {
@@ -84,8 +93,9 @@ async function start() {
     if (typeof connectDB === 'function') {
       await connectDB();
     }
-    const server = app.listen(process.env.PORT, () => {
-      console.log(`Server running on port ${process.env.PORT}`);
+    const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+    const server = app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
     server.on('error', (e) => console.error('HTTP server error:', e));
   } catch (e) {
@@ -94,8 +104,8 @@ async function start() {
   }
 }
 
-if (require.main === module) {
+if ((require as any).main === module || require.main === module) {
   start();
 }
 
-module.exports = app;
+export default app;
