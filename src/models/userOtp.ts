@@ -6,7 +6,7 @@ export interface IUserOtp extends Document {
   otp: string;
   purpose: UserOtpPurpose;
   resend_count: number;
-  expires_at: Date;
+  expiresAt: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,11 +17,11 @@ const userOtpSchema = new Schema<IUserOtp>(
     otp: { type: String, required: true },
     purpose: {
       type: String,
-      enum: ['Verify Account', 'Forgot Password'],
+      enum: ['verify_account', 'forgot_password'],
       required: true,
     },
     resend_count: { type: Number, default: 0 },
-    expires_at: { type: Date, required: true },
+    expiresAt: { type: Date, required: true },
   },
   { timestamps: true }
 );

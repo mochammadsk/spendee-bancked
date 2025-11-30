@@ -8,7 +8,7 @@ export type OtpRecordLike = {
 export type GeneratedOtp = {
   otp: string;
   otpHash: string;
-  expires_at: Date;
+  expiresAt: Date;
 };
 
 // Generate OTP
@@ -19,9 +19,9 @@ export async function generateOtp(): Promise<GeneratedOtp> {
   }
 
   const otpHash = await bcrypt.hash(otp, 10);
-  const expires_at = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-  return { otp, otpHash, expires_at };
+  return { otp, otpHash, expiresAt };
 }
 
 // Check cooldown OTP

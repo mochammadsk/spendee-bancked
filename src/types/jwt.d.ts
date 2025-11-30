@@ -8,6 +8,7 @@ declare global {
         email?: string;
         user_name?: string;
         full_name?: string;
+        verified?: boolean;
         [key: string]: any;
       };
     }

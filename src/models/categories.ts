@@ -1,4 +1,10 @@
-const { Schema, model } = require('mongoose');
+import mongoose, { Document, Schema, Types } from 'mongoose';
+
+export interface ICategory extends Document {
+  userId: Types.ObjectId | string;
+  type: 'expense' | 'income';
+  name: string;
+}
 
 const categorySchema = new Schema(
   {
@@ -9,4 +15,4 @@ const categorySchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = model('Category', categorySchema);
+export default mongoose.model<ICategory>('Category', categorySchema);

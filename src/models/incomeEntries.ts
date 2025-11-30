@@ -1,6 +1,15 @@
-const { Schema, model } = require('mongoose');
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-const incomeEntrySchema = new Schema(
+export interface IIncomeEntry extends Document {
+  userId: Types.ObjectId | string;
+  incomeSourceId?: Types.ObjectId | string;
+  walletId?: Types.ObjectId | string;
+  amount: number;
+  date: Date;
+  note: string;
+}
+
+const incomeEntrySchema = new Schema<IIncomeEntry>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     incomeSourceId: {
@@ -16,4 +25,4 @@ const incomeEntrySchema = new Schema(
   { timestamps: true }
 );
 
-module.exports = model('IncomeEntry', incomeEntrySchema);
+export default mongoose.model<IIncomeEntry>('IncomeEntry', incomeEntrySchema);
