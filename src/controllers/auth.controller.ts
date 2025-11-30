@@ -110,7 +110,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     await userOtp.deleteMany({ user_id });
     await User.findByIdAndUpdate(user_id, { verified: true });
 
-    return res.status(200).json({ success: true, message: 'OTP verified' });
+    return res.status(200).json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
@@ -164,7 +164,6 @@ export const resendOtp = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'OTP resent',
       info: {
         resend_count: newRecord.resend_count,
         expires_at: newRecord.expires_at,
@@ -211,7 +210,7 @@ export const signin = async (req: Request, res: Response) => {
       expiresIn: '7d',
     });
 
-    return res.status(200).json({ token, data: userData(user) });
+    return res.status(200).json({ success: true, token, data: userData(user) });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
@@ -236,7 +235,9 @@ export const keepSignedIn = async (
       return res.status(404).json({ message: 'User not found' });
     }
 
-    return res.status(200).json({ data: userData(user as IUser) });
+    return res
+      .status(200)
+      .json({ success: true, data: userData(user as IUser) });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
@@ -296,7 +297,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       success: true,
-      message: 'OTP has been sent to your email',
       info: {
         resend_count: newRecord.resend_count,
         expires_at: newRecord.expires_at,
@@ -350,9 +350,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       purpose: 'Forgot Password',
     });
 
-    return res
-      .status(200)
-      .json({ success: true, message: 'Password has been reset' });
+    return res.status(200).json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
@@ -362,7 +360,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const signout = async (_req: Request, res: Response) => {
   try {
-    return res.status(200).json({ message: 'Signed out successfully' });
+    return res.status(200).json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
