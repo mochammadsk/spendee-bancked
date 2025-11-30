@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   email: string;
@@ -24,4 +24,4 @@ userSchema.method('toJSON', function () {
   return { id: _id, ...object };
 });
 
-export default mongoose.model<IUser>('user', userSchema);
+export default mongoose.model<IUser>('User', userSchema);

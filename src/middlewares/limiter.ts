@@ -1,5 +1,5 @@
-import { rateLimit } from 'express-rate-limit';
 import { Request } from 'express';
+import { rateLimit } from 'express-rate-limit';
 
 function getClientIp(req: Request): string {
   if (req.ip) return req.ip;

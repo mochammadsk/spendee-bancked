@@ -1,11 +1,11 @@
-import express, { Request, Response, NextFunction } from 'express';
-import crypto from 'node:crypto';
 import cors from 'cors';
-import database from './lib/database';
+import dotenv from 'dotenv';
+import express, { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import crypto from 'node:crypto';
+import database from './lib/database';
 import routes from './routes';
-import dotenv from 'dotenv';
 
 dotenv.config();
 

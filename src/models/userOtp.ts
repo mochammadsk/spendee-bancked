@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type UserOtpPurpose = 'Verify Account' | 'Forgot Password';
 export interface IUserOtp extends Document {
@@ -31,4 +31,4 @@ userOtpSchema.method('toJSON', function () {
   return { id: _id, ...rest };
 });
 
-export default mongoose.model<IUserOtp>('userOtp', userOtpSchema);
+export default mongoose.model<IUserOtp>('UserOtp', userOtpSchema);

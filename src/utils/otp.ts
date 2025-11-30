@@ -5,16 +5,13 @@ export type OtpRecordLike = {
   resend_count?: number | null;
 };
 
-/** Hasil generateOtp */
 export type GeneratedOtp = {
   otp: string;
   otpHash: string;
   expires_at: Date;
 };
 
-/**
- * Generate 6-digit OTP, hashed OTP, and expiration (5 minutes).
- */
+// Generate OTP
 export async function generateOtp(): Promise<GeneratedOtp> {
   let otp = '';
   for (let i = 0; i < 6; i++) {
@@ -27,10 +24,7 @@ export async function generateOtp(): Promise<GeneratedOtp> {
   return { otp, otpHash, expires_at };
 }
 
-/**
- * Check cooldown since lastRecord.createdAt.
- * If still in cooldown returns { cooldown: true, wait: <seconds> }, otherwise null.
- */
+// Check cooldown OTP
 export function cooldownOtp(
   lastRecord?: OtpRecordLike,
   cooldownSeconds = 60
@@ -56,10 +50,7 @@ export function cooldownOtp(
   return null;
 }
 
-/**
- * Check resend limit. Returns { limited: true } when over limit,
- * otherwise returns { limited: false, count }.
- */
+// Check limit OTP
 export function limitOtp(
   lastRecord?: OtpRecordLike,
   max = 3

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type WalletType = 'bank' | 'cash' | 'e-wallet';
 export interface IWallet extends Document {
@@ -41,4 +41,4 @@ walletSchema.pre('save', function (next) {
   next();
 });
 
-export default mongoose.model<IWallet>('wallet', walletSchema);
+export default mongoose.model<IWallet>('Wallet', walletSchema);
