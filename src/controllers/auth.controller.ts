@@ -1,14 +1,17 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const userOtp = require('../models/userOtp');
-const User = require('../models/user');
-const escapeRegExp = require('../utils/escapeRegExp');
-const { generateOtp, cooldownOtp, limitOtp } = require('../utils/otp');
-const { otpVerifyAccont, otpForgotPassword } = require('../utils/sendOtp');
-require('dotenv').config();
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import User from '../models/user';
+import UserOtp from '../models/userOtp';
+import { otpForgotPassword, otpVerifyAccount } from '../services/mailService';
+import { IUser } from '../types/userTypes';
+import escapeRegExp from '../utils/escapeRegExp';
+import { cooldownOtp, generateOtp, limitOtp } from '../utils/otp';
+dotenv.config();
 
-// Helper to format user data
-const userData = (u) => ({
+// Format user
+const userData = (u: IUser) => ({
   id: u._id.toString(),
   email: u.email,
   full_name: u.full_name,
@@ -16,14 +19,13 @@ const userData = (u) => ({
   verified: u.verified,
 });
 
-exports.signup = async (req, res) => {
+export const signup = async (req: Request, res: Response) => {
   try {
     const { email, full_name, user_name, password } = req.body;
     if (!email || !full_name || !user_name || !password) {
       return res.status(400).json({ message: 'Fields are required' });
     }
 
-    // Unique email & username check
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(409).json({ message: 'Email already in use' });
@@ -35,6 +37,7 @@ exports.signup = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       email,
       full_name,
@@ -42,19 +45,21 @@ exports.signup = async (req, res) => {
       password: hashedPassword,
     });
 
-    // Generate and send OTP
     const { otp, otpHash, expires_at } = await generateOtp();
 
-    await userOtp.deleteMany({ user_id: newUser._id });
-    await userOtp.create({
+    await UserOtp.deleteMany({ user_id: newUser._id });
+
+    const newRecord = await UserOtp.create({
       user_id: newUser._id,
       otp: otpHash,
       expires_at,
       purpose: 'Verify Account',
     });
-    await otpVerifyAccont(email, otp);
+
+    await otpVerifyAccount(email, otp);
 
     await newUser.save();
+
     return res.status(201).json({
       success: true,
       otp_sent: true,
@@ -64,23 +69,25 @@ exports.signup = async (req, res) => {
         expires_at: newRecord.expires_at,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.verifyOtp = async (req, res) => {
+// ======================= VERIFY OTP =======================
+
+export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { user_id, otp } = req.body;
     if (!user_id || !otp) {
       return res.status(400).json({ message: 'Fields are required' });
     }
 
-    const record = await userOtp.findOne({ user_id }).sort({ created_at: -1 });
+    const record = await UserOtp.findOne({ user_id }).sort({ created_at: -1 });
     if (!record) return res.status(404).json({ message: 'OTP not found' });
 
     if (record.expires_at < new Date()) {
-      await userOtp.deleteMany({ user_id });
+      await UserOtp.deleteMany({ user_id });
       return res.status(400).json({ message: 'OTP has expired' });
     }
 
@@ -89,16 +96,18 @@ exports.verifyOtp = async (req, res) => {
       return res.status(401).json({ message: 'Invalid OTP' });
     }
 
-    await userOtp.deleteMany({ user_id });
+    await UserOtp.deleteMany({ user_id });
     await User.findByIdAndUpdate(user_id, { verified: true });
 
-    return res.status(200).json({ success: true, message: 'OTP verified' });
-  } catch (error) {
+    return res.status(200).json({ success: true });
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.resendOtp = async (req, res) => {
+// ======================= RESEND OTP =======================
+
+export const resendOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
@@ -109,54 +118,54 @@ exports.resendOtp = async (req, res) => {
     if (user.verified)
       return res.status(400).json({ message: 'User already verified' });
 
-    // Cooldown check
-    const lastRecord = await userOtp
-      .findOne({ user_id: user._id })
-      .sort({ created_at: -1 });
+    const lastRecord = await UserOtp.findOne({ user_id: user._id }).sort({
+      created_at: -1,
+    });
 
-    const cooldown = cooldownOtp(lastRecord, 60);
+    const cooldown = cooldownOtp(lastRecord ?? undefined, 60);
     if (cooldown) {
       return res.status(429).json({
         message: `Please wait ${cooldown.wait} seconds before requesting a new OTP`,
       });
     }
 
-    // Resend limit
-    const resendLimit = limitOtp(lastRecord, 3);
+    const resendLimit = limitOtp(lastRecord ?? undefined, 3);
     if (resendLimit.limited) {
       return res.status(429).json({
         message: 'Maximum OTP resend attempts reached',
       });
     }
+
     const prevResendCount = resendLimit.count;
 
-    // Generate and send OTP
     const { otp, otpHash, expires_at } = await generateOtp();
+    await UserOtp.deleteMany({ user_id: user._id });
 
-    await userOtp.deleteMany({ user_id: user._id });
-    const newRecord = await userOtp.create({
+    const newRecord = await UserOtp.create({
       user_id: user._id,
       otp: otpHash,
-      purpose: 'Forgot Password',
+      purpose: 'Verify Account',
       expires_at,
       resend_count: prevResendCount + 1,
     });
-    await otpVerifyAccont(email, otp);
+
+    await otpVerifyAccount(email, otp);
 
     return res.status(200).json({
       success: true,
-      message: 'OTP resent',
       info: {
         resend_count: newRecord.resend_count,
         expires_at: newRecord.expires_at,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.signin = async (req, res) => {
+// ======================= SIGNIN =======================
+
+export const signin = async (req: Request, res: Response) => {
   try {
     const { identifier, password } = req.body;
     if (!identifier || !password) {
@@ -171,7 +180,7 @@ exports.signin = async (req, res) => {
       ],
     };
 
-    const user = await User.findOne(query);
+    const user: IUser | null = await User.findOne(query);
     if (!user || !user.password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -184,45 +193,48 @@ exports.signin = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const payload = {
-      id: user._id.toString(),
-      email: user.email,
-      full_name: user.full_name,
-      user_name: user.user_name,
-      verified: user.verified,
-    };
+    const payload = userData(user);
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.TOKEN_TTL || '7d',
+    const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+      expiresIn: '7d',
     });
 
-    return res.status(200).json({ token, data: userData(user) });
-  } catch (error) {
+    return res.status(200).json({ success: true, token, data: userData(user) });
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.keepSignedIn = async (req, res) => {
+// ======================= KEEP SIGNED IN =======================
+
+export const keepSignedIn = async (
+  req: Request & { user?: any },
+  res: Response
+) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
     const user = await User.findById(req.user.id)
-      .select('name user_name role')
+      .select('name user_name role email full_name verified')
       .lean();
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    return res.status(200).json({ data: userData(user) });
-  } catch (error) {
+    return res
+      .status(200)
+      .json({ success: true, data: userData(user as IUser) });
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.forgotPassword = async (req, res) => {
+// ======================= FORGOT PASSWORD =======================
+
+export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
@@ -230,36 +242,40 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({
       email: new RegExp(`^${email.trim()}$`, 'i'),
     });
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Cooldown check
-    const lastRecord = await userOtp
-      .findOne({ user_id: user._id, purpose: 'Forgot Password' })
-      .sort({ created_at: -1 });
+    const lastRecord = await UserOtp.findOne({
+      user_id: user._id,
+      purpose: 'Forgot Password',
+    }).sort({ created_at: -1 });
 
-    const cooldown = cooldownOtp(lastRecord, 60);
+    const cooldown = cooldownOtp(lastRecord ?? undefined, 60);
     if (cooldown) {
       return res.status(429).json({
         message: `Please wait ${cooldown.wait} seconds before requesting a new OTP`,
       });
     }
 
-    // Resend limit
-    const resendLimit = limitOtp(lastRecord, 3);
+    const resendLimit = limitOtp(lastRecord ?? undefined, 3);
     if (resendLimit.limited) {
       return res.status(429).json({
         message: 'Maximum OTP resend attempts reached',
       });
     }
+
     const prevResendCount = resendLimit.count;
 
-    // Generate and send OTP
     const { otp, otpHash, expires_at } = await generateOtp();
 
-    await userOtp.deleteMany({ user_id: user._id, purpose: 'Forgot Password' });
-    const newRecord = await userOtp.create({
+    await UserOtp.deleteMany({
+      user_id: user._id,
+      purpose: 'Forgot Password',
+    });
+
+    const newRecord = await UserOtp.create({
       user_id: user._id,
       otp: otpHash,
       expires_at,
@@ -267,25 +283,26 @@ exports.forgotPassword = async (req, res) => {
       purpose: 'Forgot Password',
     });
 
-    // Send OTP
-    await otpForgotPassword(user.email, otp, { purpose: 'Forgot Password' });
+    await otpForgotPassword(user.email, otp);
 
     return res.status(200).json({
       success: true,
-      message: 'OTP has been sent to your email',
       info: {
         resend_count: newRecord.resend_count,
         expires_at: newRecord.expires_at,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.resetPassword = async (req, res) => {
+// ======================= RESET PASSWORD =======================
+
+export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { email, otp, new_password } = req.body;
+
     if (!email || !otp || !new_password) {
       return res.status(400).json({ message: 'Fields are required' });
     }
@@ -293,18 +310,18 @@ exports.resetPassword = async (req, res) => {
     const user = await User.findOne({
       email: new RegExp(`^${email.trim()}$`, 'i'),
     });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
 
-    const record = await userOtp
-      .findOne({ user_id: user._id, purpose: 'Forgot Password' })
-      .sort({ created_at: -1 });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const record = await UserOtp.findOne({
+      user_id: user._id,
+      purpose: 'Forgot Password',
+    }).sort({ created_at: -1 });
 
     if (!record) return res.status(404).json({ message: 'OTP not found' });
 
     if (record.expires_at < new Date()) {
-      await userOtp.deleteMany({
+      await UserOtp.deleteMany({
         user_id: user._id,
         purpose: 'Forgot Password',
       });
@@ -319,20 +336,23 @@ exports.resetPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(new_password, 10);
     await User.findByIdAndUpdate(user._id, { password: hashedPassword });
 
-    await userOtp.deleteMany({ user_id: user._id, purpose: 'Forgot Password' });
+    await UserOtp.deleteMany({
+      user_id: user._id,
+      purpose: 'Forgot Password',
+    });
 
-    return res
-      .status(200)
-      .json({ success: true, message: 'Password has been reset' });
-  } catch (error) {
+    return res.status(200).json({ success: true });
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-exports.signout = async (req, res) => {
+// ======================= SIGNOUT =======================
+
+export const signout = async (_req: Request, res: Response) => {
   try {
-    return res.status(200).json({ message: 'Signed out successfully' });
-  } catch (error) {
+    return res.status(200).json({ success: true });
+  } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
 };

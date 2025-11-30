@@ -1,0 +1,28 @@
+import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { ZodError, ZodIssue, ZodSchema } from 'zod';
+
+export const validate = (schema: ZodSchema<any>): RequestHandler => {
+  return (req: Request, res: Response, next: NextFunction): void | Response => {
+    try {
+      const validated = schema.parse(req.body);
+      req.body = validated;
+      return next();
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const zodErr = err as ZodError;
+        const messages = zodErr.issues.map((issue: ZodIssue) => issue.message);
+        return res.status(400).json({
+          success: false,
+          message: 'Validation error',
+          errors: messages,
+        });
+      }
+
+      // unknown error from validator
+      return res.status(500).json({
+        success: false,
+        message: 'Internal validator error',
+      });
+    }
+  };
+};
