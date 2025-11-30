@@ -53,7 +53,7 @@ export const signup = async (req: Request, res: Response) => {
       user_id: newUser._id,
       otp: otpHash,
       expiresAt,
-      purpose: 'Verify Account',
+      purpose: 'verify_account',
     });
 
     await otpVerifyAccount(email, otp);
@@ -73,8 +73,6 @@ export const signup = async (req: Request, res: Response) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-// ======================= VERIFY OTP =======================
 
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
@@ -104,8 +102,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-// ======================= RESEND OTP =======================
 
 export const resendOtp = async (req: Request, res: Response) => {
   try {
@@ -144,7 +140,7 @@ export const resendOtp = async (req: Request, res: Response) => {
     const newRecord = await UserOtp.create({
       user_id: user._id,
       otp: otpHash,
-      purpose: 'Verify Account',
+      purpose: 'verify_account',
       expiresAt,
       resend_count: prevResendCount + 1,
     });
@@ -162,8 +158,6 @@ export const resendOtp = async (req: Request, res: Response) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-// ======================= SIGNIN =======================
 
 export const signin = async (req: Request, res: Response) => {
   try {
@@ -205,8 +199,6 @@ export const signin = async (req: Request, res: Response) => {
   }
 };
 
-// ======================= KEEP SIGNED IN =======================
-
 export const keepSignedIn = async (
   req: Request & { user?: any },
   res: Response
@@ -232,8 +224,6 @@ export const keepSignedIn = async (
   }
 };
 
-// ======================= FORGOT PASSWORD =======================
-
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -249,7 +239,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const lastRecord = await UserOtp.findOne({
       user_id: user._id,
-      purpose: 'Forgot Password',
+      purpose: 'forgot_password',
     }).sort({ created_at: -1 });
 
     const cooldown = cooldownOtp(lastRecord ?? undefined, 60);
@@ -272,7 +262,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     await UserOtp.deleteMany({
       user_id: user._id,
-      purpose: 'Forgot Password',
+      purpose: 'forgot_password',
     });
 
     const newRecord = await UserOtp.create({
@@ -280,7 +270,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       otp: otpHash,
       expiresAt,
       resend_count: prevResendCount + 1,
-      purpose: 'Forgot Password',
+      purpose: 'forgot_password',
     });
 
     await otpForgotPassword(user.email, otp);
@@ -296,8 +286,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-// ======================= RESET PASSWORD =======================
 
 export const resetPassword = async (req: Request, res: Response) => {
   try {
@@ -315,7 +303,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     const record = await UserOtp.findOne({
       user_id: user._id,
-      purpose: 'Forgot Password',
+      purpose: 'forgot_password',
     }).sort({ created_at: -1 });
 
     if (!record) return res.status(404).json({ message: 'OTP not found' });
@@ -323,7 +311,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     if (record.expiresAt < new Date()) {
       await UserOtp.deleteMany({
         user_id: user._id,
-        purpose: 'Forgot Password',
+        purpose: 'forgot_password',
       });
       return res.status(400).json({ message: 'OTP has expired' });
     }
@@ -338,7 +326,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     await UserOtp.deleteMany({
       user_id: user._id,
-      purpose: 'Forgot Password',
+      purpose: 'forgot_password',
     });
 
     return res.status(200).json({ success: true });
@@ -346,8 +334,6 @@ export const resetPassword = async (req: Request, res: Response) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-// ======================= SIGNOUT =======================
 
 export const signout = async (_req: Request, res: Response) => {
   try {

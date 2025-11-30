@@ -17,7 +17,7 @@ const userOtpSchema = new Schema<IUserOtp>(
     otp: { type: String, required: true },
     purpose: {
       type: String,
-      enum: ['Verify Account', 'Forgot Password'],
+      enum: ['verify_account', 'forgot_password'],
       required: true,
     },
     resend_count: { type: Number, default: 0 },
