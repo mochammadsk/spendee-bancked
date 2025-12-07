@@ -193,7 +193,15 @@ export const signin = async (req: Request, res: Response) => {
       expiresIn: '7d',
     });
 
-    return res.status(200).json({ success: true, token, data: userData(user) });
+    return res
+      .status(200)
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .json({ success: true, data: userData(user) });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
@@ -337,7 +345,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const signout = async (_req: Request, res: Response) => {
   try {
-    return res.status(200).json({ success: true });
+    return res.status(200).clearCookie('token').json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
