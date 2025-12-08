@@ -1,45 +1,30 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
-type MongooseCached = {
-  conn: typeof mongoose | null;
-  promise: Promise<typeof mongoose> | null;
-};
+let connPromise: Promise<typeof mongoose> | null = null;
 
-declare global {
-  namespace NodeJS {
-    interface Global {
-      _mongoose?: MongooseCached;
-    }
+export async function connectDB() {
+  if (connPromise) return connPromise;
+
+  if (!process.env.MONGODB_URI) {
+    throw new Error('MONGODB_URI is not set');
   }
-}
 
-const globalWithMongoose = global as unknown as NodeJS.Global & {
-  _mongoose?: MongooseCached;
-};
+  connPromise = mongoose
+    .connect(process.env.MONGODB_URI)
+    .then((m) => {
+      console.log('[INFO] MongoDB connected');
+      return m;
+    })
+    .catch((err) => {
+      connPromise = null;
+      console.error('[INFO] MongoDB Connection error:', err);
+      throw err;
+    });
 
-let cached: MongooseCached =
-  globalWithMongoose._mongoose ||
-  (globalWithMongoose._mongoose = { conn: null, promise: null });
-
-async function connectDB(): Promise<typeof mongoose> {
-  if (cached.conn) return cached.conn;
-  if (!cached.promise) {
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI is not defined in environment');
-    }
-    cached.promise = mongoose
-      .connect(mongoUri, {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
-      })
-      .then((m) => m);
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  return connPromise;
 }
 
 export default { connectDB };

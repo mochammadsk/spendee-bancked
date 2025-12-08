@@ -8,7 +8,8 @@ import { otpForgotPassword, otpVerifyAccount } from '../services/mailService';
 import { IUser } from '../types/userTypes';
 import escapeRegExp from '../utils/escapeRegExp';
 import { cooldownOtp, generateOtp, limitOtp } from '../utils/otp';
-dotenv.config();
+
+dotenv.config({ quiet: true });
 
 // Format user
 const userData = (u: IUser) => ({
