@@ -33,7 +33,7 @@ app.use(
     origin: [
       'http://localhost:5173',
       'http://localhost:5174',
-      'hpps://spendee.vercelfy.app',
+      'https://spendeefy.vercel.app',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
