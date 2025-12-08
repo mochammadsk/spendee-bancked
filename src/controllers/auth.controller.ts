@@ -196,6 +196,7 @@ export const signin = async (req: Request, res: Response) => {
         httpOnly: true,
         secure: true,
         sameSite: 'none',
+        path: '/',
         maxAge: ttl,
       })
       .json({ success: true });
@@ -335,7 +336,15 @@ export const resetPassword = async (req: Request, res: Response) => {
 
 export const signout = async (_req: Request, res: Response) => {
   try {
-    return res.status(200).clearCookie('token').json({ success: true });
+    return res
+      .status(200)
+      .clearCookie('token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        path: '/',
+      })
+      .json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
