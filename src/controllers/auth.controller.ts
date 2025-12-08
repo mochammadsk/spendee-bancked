@@ -161,7 +161,7 @@ export const resendOtp = async (req: Request, res: Response) => {
 
 export const signin = async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body;
+    const { identifier, password, remember } = req.body;
     if (!identifier || !password) {
       return res.status(400).json({ message: 'Fields are required' });
     }
@@ -182,9 +182,12 @@ export const signin = async (req: Request, res: Response) => {
     }
 
     const payload = userData(user);
+    const shortSessionMs = 2 * 60 * 60 * 1000;
+    const longSessionMs = 7 * 24 * 60 * 60 * 1000;
+    const ttl = remember ? longSessionMs : shortSessionMs;
 
     const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
-      expiresIn: '7d',
+      expiresIn: Math.floor(ttl / 1000),
     });
 
     return res
@@ -193,9 +196,9 @@ export const signin = async (req: Request, res: Response) => {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: ttl,
       })
-      .json({ success: true, data: userData(user) });
+      .json({ success: true });
   } catch (error: any) {
     return res.status(500).json({ message: error.message });
   }
