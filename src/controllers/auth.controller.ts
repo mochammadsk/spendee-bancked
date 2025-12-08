@@ -6,7 +6,6 @@ import User from '../models/user';
 import UserOtp from '../models/userOtp';
 import { otpForgotPassword, otpVerifyAccount } from '../services/mailService';
 import { IUser } from '../types/userTypes';
-import escapeRegExp from '../utils/escapeRegExp';
 import { cooldownOtp, generateOtp, limitOtp } from '../utils/otp';
 
 dotenv.config({ quiet: true });
@@ -167,15 +166,9 @@ export const signin = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Fields are required' });
     }
 
-    const safeIdentifier = escapeRegExp(identifier.trim());
-    const query = {
-      $or: [
-        { email: new RegExp(`^${safeIdentifier}$`, 'i') },
-        { user_name: new RegExp(`^${safeIdentifier}$`, 'i') },
-      ],
-    };
-
-    const user: IUser | null = await User.findOne(query);
+    const user: IUser | null = await User.findOne({
+      $or: [{ email: identifier }, { user_name: identifier }],
+    });
     if (!user || !user.password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -238,9 +231,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    const user = await User.findOne({
-      email: new RegExp(`^${email.trim()}$`, 'i'),
-    });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -299,22 +290,17 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { email, otp, new_password } = req.body;
-
     if (!email || !otp || !new_password) {
       return res.status(400).json({ message: 'Fields are required' });
     }
 
-    const user = await User.findOne({
-      email: new RegExp(`^${email.trim()}$`, 'i'),
-    });
-
+    const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const record = await UserOtp.findOne({
       user_id: user._id,
       purpose: 'forgot_password',
     }).sort({ created_at: -1 });
-
     if (!record) return res.status(404).json({ message: 'OTP not found' });
 
     if (record.expiresAt < new Date()) {
