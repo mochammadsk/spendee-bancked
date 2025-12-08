@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { NextFunction, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 interface AuthRequest extends JwtPayload {
   id?: string;

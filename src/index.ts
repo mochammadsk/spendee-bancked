@@ -8,17 +8,15 @@ import crypto from 'node:crypto';
 import database from './lib/database';
 import routes from './routes';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const app = express();
 
-// Config
-let connectDB: (() => Promise<any>) | undefined;
-try {
-  ({ connectDB } = database as { connectDB?: () => Promise<any> });
-} catch {
-  connectDB = undefined;
-}
+// Database
+const { connectDB } = database as { connectDB: () => Promise<any> };
+connectDB().catch((err) => {
+  console.error('Failed to connect DB on cold start:', err);
+});
 
 // Security
 app.set('trust proxy', 1);
@@ -30,20 +28,13 @@ app.use(
 );
 
 // Cors
-const allowlist = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-
 app.use(
   cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (!allowlist.length || allowlist.includes(origin))
-        return cb(null, true);
-      return cb(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'hpps://spendee.vercelfy.app',
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
@@ -52,6 +43,7 @@ app.use(
       'Accept',
       'Authorization',
     ],
+    credentials: true,
   })
 );
 
@@ -87,21 +79,20 @@ app.use('/api', routes);
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('ERROR:', err);
   const status = err?.status || 500;
-  res.status(status).json({ message: err?.message || 'Internal Server Error' });
+  const message = err?.message || 'Internal server error';
+  res.status(status).json({ message });
 });
 
 async function start() {
   try {
-    if (typeof connectDB === 'function') {
-      await connectDB();
-    }
-    const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+    await connectDB();
+    const port = process.env.PORT;
     const server = app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
+      console.log(`[INFO] Server running on port ${port}`);
     });
     server.on('error', (e) => console.error('HTTP server error:', e));
   } catch (e) {
-    console.error('Failed to start server:', e);
+    console.error('[INFO] Failed to start server:', e);
     process.exit(1);
   }
 }
