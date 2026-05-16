@@ -1,14 +1,14 @@
-import { Hono } from 'hono'
+import { serve } from '@hono/node-server';
+import app from '@/app.js';
+import dotenv from 'dotenv';
 
-const app = new Hono()
+dotenv.config();
 
-const welcomeStrings = [
-  'Hello Hono!',
-  'To learn more about Hono on Vercel, visit https://vercel.com/docs/frameworks/backend/hono'
-]
+const port = Number(process.env.PORT);
 
-app.get('/', (c) => {
-  return c.text(welcomeStrings.join('\n\n'))
-})
+serve({
+  fetch: app.fetch,
+  port,
+});
 
-export default app
+console.log(`Server running on port ${port}`);

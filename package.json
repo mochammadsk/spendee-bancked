@@ -1,12 +1,32 @@
 {
-  "name": "hono",
+  "name": "spendee-bancked",
   "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
   "dependencies": {
-    "hono": "^4.12.19"
+    "@hono/node-server": "^1.19.14",
+    "@hono/zod-validator": "^0.8.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.19",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.6.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^20.11.17",
-    "tsx": "^4.7.1",
-    "typescript": "^5.8.3"
+    "@eslint/js": "^10.0.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.19.41",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "prettier": "^3.8.3",
+    "tsx": "^4.22.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.3"
   }
 }
