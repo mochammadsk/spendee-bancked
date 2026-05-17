@@ -1,14 +1,29 @@
+import dotenv from 'dotenv';
 import { serve } from '@hono/node-server';
 import app from '@/app.js';
-import dotenv from 'dotenv';
+import { connectDatabase } from '@/database/mongodb.js';
 
 dotenv.config();
 
 const port = Number(process.env.PORT);
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+const startServer = async () => {
+  try {
+    await connectDatabase();
 
-console.log(`Server running on port ${port}`);
+    console.log('✅ Database connected');
+
+    serve({
+      fetch: app.fetch,
+      port,
+    });
+
+    console.log(`✅ Server running on port ${port}`);
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+
+    process.exit(1);
+  }
+};
+
+startServer();
