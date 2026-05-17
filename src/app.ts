@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
+import authRoutes from '@/modules/auth/auth.routes.js';
 
 const app = new Hono();
 
@@ -20,5 +21,8 @@ app.get('/', (c) => {
     message: 'API running',
   });
 });
+
+// Routes
+app.route('/api/auth', authRoutes);
 
 export default app;

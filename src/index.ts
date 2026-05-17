@@ -3,7 +3,9 @@ import { serve } from '@hono/node-server';
 import app from '@/app.js';
 import { connectDatabase } from '@/database/mongodb.js';
 
-dotenv.config();
+dotenv.config({
+  quiet: true,
+});
 
 const port = Number(process.env.PORT);
 
