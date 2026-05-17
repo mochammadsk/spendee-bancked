@@ -13,16 +13,16 @@ const startServer = async () => {
   try {
     await connectDatabase();
 
-    console.log('✅ Database connected');
+    console.log('> Database connected');
 
     serve({
       fetch: app.fetch,
       port,
     });
 
-    console.log(`✅ Server running on port ${port}`);
+    console.log(`> Server running on port ${port}`);
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('! Failed to start server:', error);
 
     process.exit(1);
   }

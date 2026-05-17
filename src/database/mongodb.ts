@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
 import { env } from '@/config/env.js';
 
-export const connectDatabase = async () => {
-  try {
-    await mongoose.connect(env.MONGODB_URI);
+let isConnected = false;
 
-    console.log('> Database connected');
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
+export const connectDatabase = async () => {
+  if (isConnected) {
+    return;
   }
+
+  await mongoose.connect(env.MONGODB_URI);
+
+  isConnected = true;
+
+  console.log('> Database connected');
 };
