@@ -16,14 +16,7 @@
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-
-    "ignoreDeprecations": "6.0"
+    "allowSyntheticDefaultImports": true
   },
   "exclude": ["node_modules"]
 }

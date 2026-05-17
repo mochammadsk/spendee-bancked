@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { serve } from '@hono/node-server';
-import app from '@/app.js';
-import { connectDatabase } from '@/database/mongodb.js';
+import app from './app.js';
+import { connectDatabase } from './database/mongodb.js';
 
 dotenv.config({
   quiet: true,

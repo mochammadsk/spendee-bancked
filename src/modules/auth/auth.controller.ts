@@ -1,8 +1,8 @@
 import type { Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { ApiResponse } from '@/shared/responses/api-response.js';
-import { authService } from '@/modules/auth/auth.service.js';
-import type { LoginInput } from '@/modules/auth/auth.schema.js';
+import { authService } from './auth.service.js';
+import type { LoginInput } from './auth.schema.js';
+import { ApiResponse } from '../../shared/responses/api-response.js';
 
 export const authController = {
   async login(c: Context) {

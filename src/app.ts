@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
-import authRoutes from '@/modules/auth/auth.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 const app = new Hono();
 

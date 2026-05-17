@@ -1,11 +1,11 @@
 import bcrypt from 'bcryptjs';
+import { authRepository } from './auth.repository.js';
+import type { LoginInput, RegisterInput } from './auth.schema.js';
 import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-} from '@/shared/helpers/jwt.helper.js';
-import type { LoginInput, RegisterInput } from './auth.schema.js';
-import { authRepository } from './auth.repository.js';
+} from '../../shared/helpers/jwt.helper.js';
 
 export const authService = {
   async register(payload: RegisterInput) {

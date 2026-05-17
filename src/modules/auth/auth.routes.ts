@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { rateLimiter } from 'hono-rate-limiter';
 import { zValidator } from '@hono/zod-validator';
-import { loginSchema } from '@/modules/auth/auth.schema.js';
-import { authController } from '@/modules/auth/auth.controller.js';
-import { authMiddleware } from '@/middlewares/auth.middleware.js';
+import { loginSchema } from './auth.schema.js';
+import { authController } from './auth.controller.js';
+import { authMiddleware } from '../../middlewares/auth.middleware.js';
 
 const authRoutes = new Hono();
 

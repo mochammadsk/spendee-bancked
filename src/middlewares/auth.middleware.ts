@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono';
-import { verifyAccessToken } from '@/shared/helpers/jwt.helper.js';
+import { verifyAccessToken } from '../shared/helpers/jwt.helper.js';
 
 export const authMiddleware = async (c: Context, next: Next) => {
   try {

@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
-import type { TokenPayload } from '@/modules/auth/auth.types.js';
-import { env } from '@/config/env.js';
+import { env } from '../../config/env.js';
+import type { TokenPayload } from '../../modules/auth/auth.types.js';
 
 const accessSecret = new TextEncoder().encode(env.JWT_SECRET);
 const refreshSecret = new TextEncoder().encode(env.JWT_REFRESH_SECRET);
